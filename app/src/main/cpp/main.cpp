@@ -1,14 +1,15 @@
 // ========================================================
-// تطبيق أندرويد بلغة C++ الكاملة مع شاشة بداية (Splash Screen)
+// تطبيق أندرويد بلغة C++ الكاملة المضمون للتجميع
 // ========================================================
 
 #include <jni.h>
 #include <errno.h>
 #include <android/log.h>
-#include <android_native_app_glue.h>
 #include <EGL/egl.h>
 #include <GLES2/gl2.h>
 #include <cmath>
+
+#include "native_app_glue.h"
 
 #define LOG_TAG "NativeCppApp"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
