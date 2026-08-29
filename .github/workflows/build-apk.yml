@@ -12,59 +12,42 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. سحب كود المستودع
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      # 2. إعداد Java 17
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
 
-      # 3. إعداد Android SDK, NDK 25 و CMake
-      - name: Setup Android SDK, NDK & CMake
+      - name: Setup Android SDK
         uses: android-actions/setup-android@v3
-        with:
-          cmdline-tools-version: 9477386
-          packages: 'ndk;25.2.9519653 cmake;3.22.1 platforms;android-34 build-tools;34.0.0'
 
-      # 4. إعداد محرك Gradle مستقر
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
-
-      # 5. قبول التراخيص وضبط local.properties
-      - name: Accept Licenses and Setup Environment
+      - name: Accept Licenses and Setup NDK Environment
         run: |
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
+          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --install "ndk;25.2.9519653" "cmake;3.22.1" "platforms;android-34" "build-tools;34.0.0"
           echo "sdk.dir=$ANDROID_HOME" > local.properties
           echo "ndk.dir=$ANDROID_HOME/ndk/25.2.9519653" >> local.properties
 
-      # 6. إصلاح أسطر ملف gradlew الأصلي إن وجد لتفادي أي خطأ إخراج
-      - name: Sanitize Executable
+      - name: Fix gradlew executable
         run: |
           if [ -f gradlew ]; then
             sed -i 's/
 $//' gradlew
             chmod +x gradlew
-          fi
-
-      # 7. التجميع المستقر عبر gradlew أو gradle المدمج مع عرض نص الخطأ إن وجد
-      - name: Build APK with Gradle
-        run: |
-          if [ -f gradlew ]; then
-            ./gradlew assembleDebug --stacktrace --no-daemon
           else
-            gradle assembleDebug --stacktrace --no-daemon
+            gradle wrapper
+            chmod +x gradlew
           fi
 
-      # 8. رفع وتجميع كافة ملفات الـ APK الناتجة في المستودع
+      - name: Build APK with Gradle
+        run: ./gradlew assembleDebug --stacktrace --no-daemon
+
       - name: Upload Generated APK
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: app-debug-apk
-          path: |
-            **/build/outputs/apk/**/*.apk
-            **/*.apk
+          path: 'app/build/outputs/apk/debug/*.apk'
