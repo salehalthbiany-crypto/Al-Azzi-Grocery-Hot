@@ -5,32 +5,53 @@ on:
     branches: [ "main", "master" ]
   pull_request:
     branches: [ "main", "master" ]
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Code
+      # 1. جلب كود المستودع
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
+      # 2. إعداد بيئة Java 17
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
-          distribution: 'temurin'
           java-version: '17'
+          distribution: 'temurin'
 
-      - name: Setup Android SDK
+      # 3. إعداد أندرويد SDK و NDK و CMake وتأكيد التراخيص تلقائياً
+      - name: Setup Android SDK, NDK & CMake
         uses: android-actions/setup-android@v3
+        with:
+          cmdline-tools-version: 9477386
+          packages: 'ndk;25.2.9519653 cmake;3.22.1 platforms;android-34 build-tools;34.0.0'
 
+      # 4. قبول تراخيص Android SDK تلقائياً
+      - name: Accept Android SDK Licenses
+        run: |
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
+
+      # 5. إعداد Gradle
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: wrapper
 
+      # 6. منح صلاحية التنفيذ لـ gradlew
+      - name: Make gradlew executable
+        run: chmod +x gradlew
+
+      # 7. عملية تجميع الـ APK مع إظهار تفاصيل الخطأ الكاملة في حال حدوثه
       - name: Build APK with Gradle
-        run: gradle assembleDebug --stacktrace
+        run: ./gradlew assembleDebug --stacktrace --info
 
+      # 8. حفظ ملف الـ APK الناتج لمشاركته وتنزيله
       - name: Upload Generated APK
         uses: actions/upload-artifact@v4
         with:
-          name: Native-Cpp-APK-Debug
-          path: app/build/outputs/apk/debug/app-debug.apk
+          name: app-debug-apk
+          path: app/build/outputs/apk/debug/*.apk
