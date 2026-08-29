@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-      - master
+ [span_61](start_span)[span_61](end_span)[span_63](start_span)[span_63](end_span)     - master
   pull_request:
     branches:
       - main
@@ -25,13 +25,15 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Setup Android SDK
+      - name: Setup Android SDK, NDK & CMake
         uses: android-actions/setup-android@v3
+        with:
+          cmdline-tools-version: 9477386
+          packages: 'ndk;25.2.9519653 cmake;3.22.1 platforms;android-34 build-tools;34.0.0'
 
-      - name: Accept Licenses and Configure NDK
+      - name: Accept Licenses and Configure NDK Environment
         run: |
           yes | sdkmanager --licenses || true
-          sdkmanager --install "ndk;25.2.9519653" "cmake;3.22.1"
           echo "sdk.dir=$ANDROID_HOME" > local.properties
           echo "ndk.dir=$ANDROID_HOME/ndk/25.2.9519653" >> local.properties
 
@@ -40,15 +42,28 @@ jobs:
         with:
           gradle-version: '8.5'
 
-      - name: Fix Executable Permissions
+      - name: Regenerate Executable Gradle Wrapper
         run: |
-          if [ -f gradlew ]; then
-            sed -i 's/\r$//' gradlew
-            chmod +x gradlew
-          fi
+          rm -f gradlew
+          gradle wrapper --gradle-version 8.5
+          chmod +x gradlew
 
-      - name: Build APK with Gradle 8.5
-        run: gradle assembleDebug --stacktrace --no-daemon
+      - name: Build APK with Detailed Error Reporting
+        run: |
+          ./gradlew assembleDebug --stacktrace --no-daemon > build_output.log 2>&1 || BUILD_FAILED=1
+
+          if [ "${BUILD_FAILED:-0}" = "1" ]; then
+            echo "## ❌ تفاصيل سبب الفشل المباشر (Error Report)" >> $GITHUB_STEP_SUMMARY
+            echo '```text' >> $GITHUB_STEP_SUMMARY
+            grep -A 35 -E "FAILURE:|\* What went wrong:|Caused by:|e: |error:|FAILED" build_output.log | head -n 60 >> $GITHUB_STEP_SUMMARY |
+
+| tail -n 50 build_output.log >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            cat build_output.log
+            exit 1
+          else
+            echo "## ✅ تم تجميع ملف الـ APK بنجاح!" >> $GITHUB_STEP_SUMMARY
+          fi
 
       - name: Upload Generated APK
         uses: actions/upload-artifact@v4
