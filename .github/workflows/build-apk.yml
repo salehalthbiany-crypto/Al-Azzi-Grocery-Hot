@@ -50,12 +50,10 @@ jobs:
 
       - name: Auto-Create Missing Launcher Icons & Resources
         run: |
-          # إنشاء مجلدات الأيقونات وتوليد أيقونة افتراضية لمنع خطأ AAPT
           for density in mdpi hdpi xhdpi xxhdpi xxxhdpi; do
             ICON_DIR="app/src/main/res/mipmap-$density"
             mkdir -p "$ICON_DIR"
             if [ ! -f "$ICON_DIR/ic_launcher.png" ]; then
-              echo "Creating ic_launcher.png for $density..."
               echo "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==" | base64 -d > "$ICON_DIR/ic_launcher.png"
             fi
             if [ ! -f "$ICON_DIR/ic_launcher_round.png" ]; then
@@ -80,4 +78,6 @@ jobs:
         if: always()
         with:
           name: app-debug-apk
-          path: '**/*.apk'
+          path: |
+            app/build/outputs/apk/**/*.apk
+            build/**/*.apk
