@@ -48,13 +48,28 @@ jobs:
           gradle wrapper --gradle-version 8.5
           chmod +x gradlew
 
-      - name: Build APK and Extract Error
+      - name: Auto-Create Missing Launcher Icons & Resources
+        run: |
+          # إنشاء مجلدات الأيقونات وتوليد أيقونة افتراضية لمنع خطأ AAPT
+          for density in mdpi hdpi xhdpi xxhdpi xxxhdpi; do
+            ICON_DIR="app/src/main/res/mipmap-$density"
+            mkdir -p "$ICON_DIR"
+            if [ ! -f "$ICON_DIR/ic_launcher.png" ]; then
+              echo "Creating ic_launcher.png for $density..."
+              echo "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==" | base64 -d > "$ICON_DIR/ic_launcher.png"
+            fi
+            if [ ! -f "$ICON_DIR/ic_launcher_round.png" ]; then
+              cp "$ICON_DIR/ic_launcher.png" "$ICON_DIR/ic_launcher_round.png"
+            fi
+          done
+
+      - name: Build APK and Extract Error on Failure
         run: |
           ./gradlew assembleDebug --no-daemon > build_output.log 2>&1 || {
             echo "=================================================="
             echo "❌ THE EXACT BUILD FAILURE REASON IS:"
             echo "=================================================="
-            grep -A 20 -E "FAILURE:|\* What went wrong:|error:|e: " build_output.log || tail -n 50 build_output.log
+            grep -A 25 -E "FAILURE:|\* What went wrong:|error:|e: |FAILED" build_output.log || tail -n 50 build_output.log
             echo "=================================================="
             exit 1
           }
