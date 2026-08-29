@@ -23,40 +23,35 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      # 3. إعداد Android SDK, NDK & CMake
+      # 3. إعداد Android SDK و NDK و CMake
       - name: Setup Android SDK, NDK & CMake
         uses: android-actions/setup-android@v3
         with:
           cmdline-tools-version: 9477386
           packages: 'ndk;25.2.9519653 cmake;3.22.1 platforms;android-34 build-tools;34.0.0'
 
-      # 4. إعداد local.properties وتحديد NDK
-      - name: Configure local.properties
-        run: |
-          echo "sdk.dir=$ANDROID_HOME" > local.properties
-          echo "ndk.dir=$ANDROID_HOME/ndk/25.2.9519653" >> local.properties
-
-      # 5. قبول التراخيص
+      # 4. قبول تراخيص Android SDK
       - name: Accept Android SDK Licenses
         run: |
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
 
-      # 6. منح صلاحية التنفيذ لـ gradlew
-      - name: Make gradlew executable
-        run: chmod +x gradlew
+      # 5. إصلاح خطأ نهايات الأسطر (CRLF -> LF) وتوليد Wrapper محلياً
+      - name: Fix Gradle Wrapper & Line Endings
+        run: |
+          # إصلاح نهايات أسطر ملف gradlew إن وجد
+          if [ -f gradlew ]; then
+            sed -i 's/\r$//' gradlew
+            chmod +x gradlew
+          fi
+          # تثبيت وتحديث أداة Gradle التلقائية
+          gradle wrapper
 
-      # 7. التجميع واستخراج سبب الخطأ فوراً إذا حدث فشل
+      # 6. بناء التطبيق واستخراج أسباب الأخطاء إن وجدت
       - name: Build APK with Gradle
         run: |
-          ./gradlew assembleDebug --stacktrace || {
-            echo "================================================="
-            echo "❌ تفاصيل سبب الفشل المباشر (Error Summary):"
-            echo "================================================="
-            ./gradlew assembleDebug --stacktrace | grep -E "error:|FAILED|Exception|Caused by:" -A 3 -B 1 || true
-            exit 1
-          }
+          ./gradlew assembleDebug --stacktrace || gradle assembleDebug --stacktrace
 
-      # 8. رفع الـ APK عند النجاح
+      # 7. حفظ وتنزيل الـ APK الناتج عند النجاح
       - name: Upload Generated APK
         uses: actions/upload-artifact@v4
         with:
