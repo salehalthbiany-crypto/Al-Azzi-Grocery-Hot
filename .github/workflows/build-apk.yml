@@ -48,21 +48,10 @@ jobs:
           gradle wrapper --gradle-version 8.5
           chmod +x gradlew
 
-      - name: Build APK with Detailed Error Reporting
+      - name: Build APK and Print Full Output
         run: |
-          ./gradlew assembleDebug --stacktrace --no-daemon > build_output.log 2>&1 || BUILD_FAILED=1
-
-          echo "## 📋 Full Build Output Summary" >> $GITHUB_STEP_SUMMARY
-          echo '```text' >> $GITHUB_STEP_SUMMARY
-          tail -n 100 build_output.log >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-
-          if [ "${BUILD_FAILED:-0}" = "1" ]; then
-            cat build_output.log
-            exit 1
-          else
-            echo "## ✅ تم تجميع ملف الـ APK بنجاح!" >> $GITHUB_STEP_SUMMARY
-          fi
+          # Run gradle directly without hiding output so we can see the exact error on screen
+          ./gradlew assembleDebug --stacktrace --no-daemon
 
       - name: Upload Generated APK
         uses: actions/upload-artifact@v4
