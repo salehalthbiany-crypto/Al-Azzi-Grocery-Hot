@@ -23,45 +23,46 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      # 3. إعداد Android SDK و NDK و CMake
+      # 3. إعداد Android SDK و NDK 25 و CMake
       - name: Setup Android SDK, NDK & CMake
         uses: android-actions/setup-android@v3
         with:
           cmdline-tools-version: 9477386
           packages: 'ndk;25.2.9519653 cmake;3.22.1 platforms;android-34 build-tools;34.0.0'
 
-      # 4. قبول التراخيص وإعداد ملف local.properties
+      # 4. تثبيت إصدار Gradle 8.5 المتوافق رسمياً مع Android
+      - name: Setup Gradle 8.5
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.5'
+
+      # 5. قبول التراخيص وضبط ملف local.properties
       - name: Accept Licenses and Setup Environment
         run: |
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
           echo "sdk.dir=$ANDROID_HOME" > local.properties
           echo "ndk.dir=$ANDROID_HOME/ndk/25.2.9519653" >> local.properties
 
-      # 5. بناء أداة Gradle Wrapper نظيفة
-      - name: Generate Gradle Wrapper
+      # 6. إصلاح ملف gradlew إن وجد (إزالة CRLF وتفعيل الصلاحيات)
+      - name: Fix gradlew Executable
         run: |
-          gradle wrapper
-          sed -i 's/\r$//' gradlew
-          chmod +x gradlew
-
-      # 6. البناء مع طباعة ملخص سبب الخطأ بوضوح في أسفل الشاشة
-      - name: Build APK with Gradle
-        run: |
-          ./gradlew assembleDebug --stacktrace 2>&1 | tee build_output.log || BUILD_STATUS=$?
-          
-          if [ "${BUILD_STATUS:-0}" -ne 0 ]; then
-            echo " "
-            echo "============================================================"
-            echo "🚨 ملخص الخطأ المباشر (EXACT ERROR DETAILS):"
-            echo "============================================================"
-            grep -A 30 "* What went wrong:" build_output.log || grep -A 25 "FAILURE:" build_output.log || tail -n 40 build_output.log
-            echo "============================================================"
-            exit 1
+          if [ -f gradlew ]; then
+            sed -i 's/\r$//' gradlew
+            chmod +x gradlew
           fi
 
-      # 7. رفع ملف الـ APK عند النجاح
+      # 7. عملية البناء الذكية (استخدام gradlew أو gradle المدمج 8.5)
+      - name: Build APK with Gradle
+        run: |
+          if [ -f gradlew ]; then
+            ./gradlew assembleDebug --stacktrace
+          else
+            gradle assembleDebug --stacktrace
+          fi
+
+      # 8. رفع وتجميع ملف الـ APK المستخرج بنجاح
       - name: Upload Generated APK
         uses: actions/upload-artifact@v4
         with:
           name: app-debug-apk
-          path: "**/*.apk"
+          path: "**/build/outputs/apk/**/*.apk"
