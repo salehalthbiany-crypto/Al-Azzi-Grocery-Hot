@@ -48,15 +48,17 @@ jobs:
           gradle wrapper --gradle-version 8.5
           chmod +x gradlew
 
-      - name: Build APK and Show Detailed C++ Error
+      - name: Build APK and Extract Error
         run: |
-          # طباعة كل تفاصيل الأخطاء والـ StackTrace مباشرة بدون كتمان
-          ./gradlew assembleDebug --info --stacktrace --no-daemon || {
+          ./gradlew assembleDebug --no-daemon > build_output.log 2>&1 || {
             echo "=================================================="
-            echo "❌ BUILD FAILED DUE TO C++/CMAKE OR GRADLE ERROR"
+            echo "❌ THE EXACT BUILD FAILURE REASON IS:"
+            echo "=================================================="
+            grep -A 20 -E "FAILURE:|\* What went wrong:|error:|e: " build_output.log || tail -n 50 build_output.log
             echo "=================================================="
             exit 1
           }
+          echo "## ✅ تم تجميع ملف الـ APK بنجاح!" >> $GITHUB_STEP_SUMMARY
 
       - name: Upload Generated APK
         uses: actions/upload-artifact@v4
