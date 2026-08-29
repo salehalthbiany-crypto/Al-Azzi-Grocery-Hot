@@ -45,13 +45,8 @@ jobs:
             chmod +x gradlew
           fi
 
-      - name: Build APK with Gradle
-        run: |
-          if [ -f gradlew ]; then
-            ./gradlew assembleDebug --stacktrace
-          else
-            gradle assembleDebug --stacktrace
-          fi
+      - name: Build APK with Gradle Direct Runner
+        run: gradle assembleDebug --stacktrace --no-daemon
 
       - name: Upload Generated APK
         uses: actions/upload-artifact@v4
