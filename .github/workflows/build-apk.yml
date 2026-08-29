@@ -29,13 +29,13 @@ jobs:
         uses: android-actions/setup-android@v3
         with:
           cmdline-tools-version: 9477386
-          packages: 'ndk;25.2.9519653 cmake;3.22.1 platforms;android-34 build-tools;34.0.0'
+          packages: 'ndk;25.1.8937393 cmake;3.22.1 platforms;android-34 build-tools;34.0.0'
 
       - name: Accept Licenses and Configure NDK Environment
         run: |
           yes | sdkmanager --licenses || true
           echo "sdk.dir=$ANDROID_HOME" > local.properties
-          echo "ndk.dir=$ANDROID_HOME/ndk/25.2.9519653" >> local.properties
+          echo "ndk.dir=$ANDROID_HOME/ndk/25.1.8937393" >> local.properties
 
       - name: Setup Gradle 8.5
         uses: gradle/actions/setup-gradle@v4
