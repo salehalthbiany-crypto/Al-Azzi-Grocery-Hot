@@ -48,13 +48,13 @@ jobs:
           gradle wrapper --gradle-version 8.5
           chmod +x gradlew
 
-      - name: Build APK with Smart Error Display
+      - name: Build APK and Dump Logs on Failure
         run: |
           ./gradlew assembleDebug --stacktrace --no-daemon > build_output.log 2>&1 || {
             echo "=================================================="
-            echo "❌ BUILD FAILED - HERE IS THE EXACT ERROR REASON:"
+            echo "❌ THE LAST 60 LINES OF BUILD LOG (ERROR CAUSE):"
             echo "=================================================="
-            awk '/\* What went wrong:/, /BUILD FAILED/' build_output.log
+            tail -n 60 build_output.log
             echo "=================================================="
             exit 1
           }
