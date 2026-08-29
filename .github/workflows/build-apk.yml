@@ -30,14 +30,14 @@ jobs:
           cmdline-tools-version: 9477386
           packages: 'ndk;25.2.9519653 cmake;3.22.1 platforms;android-34 build-tools;34.0.0'
 
-      # 4. قبول التراخيص وضبط local.properties
+      # 4. قبول التراخيص وضبط البيئة
       - name: Accept Licenses and Setup Environment
         run: |
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
           echo "sdk.dir=$ANDROID_HOME" > local.properties
           echo "ndk.dir=$ANDROID_HOME/ndk/25.2.9519653" >> local.properties
 
-      # 5. تنظيف واستعادة Gradle Wrapper وصلاحيات التشغيل
+      # 5. تنظيف واستعادة Gradle Wrapper
       - name: Setup Gradle Executable
         run: |
           if [ -f gradlew ]; then
@@ -48,24 +48,13 @@ jobs:
             chmod +x gradlew
           fi
 
-      # 6. البناء وتسجيل المخرجات وإظهار سبب الخطأ بالتفصيل في النهاية
+      # 6. البناء
       - name: Build APK with Gradle
-        run: |
-          ./gradlew assembleDebug --stacktrace --no-daemon 2>&1 | tee build.log || BUILD_FAILED=1
-          
-          if [ "$BUILD_FAILED" = "1" ]; then
-            echo ""
-            echo "============================================================"
-            echo "🚨 سبب الفشل الرئيسي (WHAT WENT WRONG):"
-            echo "============================================================"
-            grep -A 25 "* What went wrong:" build.log || grep -A 20 "FAILURE:" build.log || tail -n 50 build.log
-            echo "============================================================"
-            exit 1
-          fi
+        run: ./gradlew assembleDebug --stacktrace --no-daemon
 
-      # 7. رفع الـ APK عند النجاح
+      # 7. البحث والتجميع والرفع المباشر لجميع ملفات الـ APK الناتجة
       - name: Upload Generated APK
         uses: actions/upload-artifact@v4
         with:
           name: app-debug-apk
-          path: app/build/outputs/apk/debug/*.apk
+          path: "**/build/outputs/apk/**/*.apk"
