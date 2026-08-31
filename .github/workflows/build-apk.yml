@@ -1,75 +1,14 @@
-name: Build Native C++ APK
-
-on:
-  push:
-    branches:
-      - main
-      - master
-  pull_request:
-    branches:
-      - main
-      - master
-  workflow_dispatch:
-
+name: Build Al-Azzi Grocery APK
+on: [push, workflow_dispatch]
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v5
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v5
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-
-      - name: Setup Android SDK, NDK & CMake
-        uses: android-actions/setup-android@v3
-        with:
-          cmdline-tools-version: 9477386
-          packages: 'ndk;25.1.8937393 cmake;3.22.1 platforms;android-34 build-tools;34.0.0'
-
-      - name: Accept Licenses
-        run: yes | sdkmanager --licenses || true
-
-      - name: Setup Gradle 8.5
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '8.5'
-
-      - name: Regenerate Executable Gradle Wrapper
-        run: |
-          rm -f gradlew
-          gradle wrapper --gradle-version 8.5
-          chmod +x gradlew
-
-      - name: Auto-Create Missing Launcher Icons & Resources
-        run: |
-          for density in mdpi hdpi xhdpi xxhdpi xxxhdpi; do
-            ICON_DIR="app/src/main/res/mipmap-$density"
-            mkdir -p "$ICON_DIR"
-            if [ ! -f "$ICON_DIR/ic_launcher.png" ]; then
-              echo "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==" | base64 -d > "$ICON_DIR/ic_launcher.png"
-            fi
-            if [ ! -f "$ICON_DIR/ic_launcher_round.png" ]; then
-              cp "$ICON_DIR/ic_launcher.png" "$ICON_DIR/ic_launcher_round.png"
-            fi
-          done
-
-      - name: Build APK
-        run: |
-          ./gradlew assembleDebug --no-daemon --stacktrace
-
-      - name: Verify APK
-        run: |
-          find app/build/outputs/apk -type f -name "*.apk" -print
-          test -n "$(find app/build/outputs/apk -type f -name "*.apk" -print -quit)"
-
-      - name: Upload Generated APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-debug-apk
-          path: app/build/outputs/apk/**/*.apk
-          if-no-files-found: error
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: 'temurin', java-version: '17' }
+      - uses: gradle/actions/setup-gradle@v3
+      - run: chmod +x gradlew
+      - run: ./gradlew assembleDebug
+      - uses: actions/upload-artifact@v4
+        with: { name: 'app-debug', path: 'app/build/outputs/apk/debug/*.apk' }
