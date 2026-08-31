@@ -22,7 +22,7 @@ jobs:
     - name: Setup Android SDK
       uses: android-actions/setup-android@v3
 
-    - name: Build with Gradle
+    - name: Build APK with Gradle
       uses: gradle/gradle-build-action@v3
       with:
         arguments: :app:assembleDebug
