@@ -24,14 +24,41 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Create Essential Android Project Structure
+      - name: Setup Gradle & Project Structure
         run: |
           mkdir -p app/src/main/java/com/azzigrocery/app app/src/main/res/layout
-          echo "rootProject.name = 'Al-Azzi-Grocery-Hot'" > settings.gradle
-          echo "buildscript { repositories { google(); mavenCentral() } } allprojects { repositories { google(); mavenCentral() } }" > build.gradle
           
+          # ضبط ملف الجذر الصحيح لـ Gradle
+          cat << 'EOF' > build.gradle
+          buildscript {
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+              dependencies {
+                  classpath 'com.android.tools.build:gradle:8.2.0'
+              }
+          }
+          allprojects {
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
+          task clean(type: Delete) {
+              delete rootProject.buildDir
+          }
+          EOF
+
+          # ضبط إعدادات المستودع
+          echo "rootProject.name = 'Al-Azzi-Grocery-Hot'" > settings.gradle
+          echo "android.useAndroidX=true" > gradle.properties
+
+          # إعدادات تطبيق أندرويد
           cat << 'EOF' > app/build.gradle
-          plugins { id 'com.android.application' }
+          plugins {
+              id 'com.android.application'
+          }
           android {
               namespace 'com.azzigrocery.app'
               compileSdk 34
@@ -50,6 +77,7 @@ jobs:
           }
           EOF
 
+          # واجهة المستخدم الأساسية
           cat << 'EOF' > app/src/main/res/layout/activity_main.xml
           <?xml version="1.0" encoding="utf-8"?>
           <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
@@ -57,18 +85,20 @@ jobs:
               android:layout_height="match_parent"
               android:orientation="vertical"
               android:background="#0F172A"
-              android:padding="16dp">
+              android:padding="16dp"
+              android:layoutDirection="rtl">
               <TextView
                   android:layout_width="wrap_content"
                   android:layout_height="wrap_content"
                   android:text="بقالة العزي للمواد الغذائية"
                   android:textColor="#FFFFFF"
-                  android:textSize="20sp"/>
+                  android:textSize="22sp"
+                  android:textStyle="bold"/>
           </LinearLayout>
           EOF
 
-      - name: Build APK using Gradle Direct Command
-        run: gradle assembleDebug --stacktrace --info
+      - name: Build APK with Gradle
+        run: gradle assembleDebug --stacktrace
 
       - name: Upload Debug APK
         uses: actions/upload-artifact@v4
