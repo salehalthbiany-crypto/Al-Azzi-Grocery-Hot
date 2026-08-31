@@ -24,27 +24,12 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Setup Complete Android & Gradle Project Structure
+      - name: Create Essential Android Project Structure
         run: |
-          # إنشاء المجلدات الأساسية
-          mkdir -p gradle/wrapper app/src/main/java/com/azzigrocery/app app/src/main/res/layout
-
-          # إنشاء ملفات الإعداد للجذر
+          mkdir -p app/src/main/java/com/azzigrocery/app app/src/main/res/layout
           echo "rootProject.name = 'Al-Azzi-Grocery-Hot'" > settings.gradle
           echo "buildscript { repositories { google(); mavenCentral() } } allprojects { repositories { google(); mavenCentral() } }" > build.gradle
-          echo "android.useAndroidX=true" > gradle.properties
-
-          # إنشاء إعدادات الـ Wrapper
-          echo "distributionBase=GRADLE_USER_HOME" > gradle/wrapper/gradle-wrapper.properties
-          echo "distributionPath=wrapper/dists" > gradle/wrapper/gradle-wrapper.properties
-          echo "distributionUrl=https\://services.gradle.org/distributions/gradle-8.5-bin.zip" >> gradle/wrapper/gradle-wrapper.properties
-          echo "zipStoreBase=GRADLE_USER_HOME" >> gradle/wrapper/gradle-wrapper.properties
-          echo "zipStorePath=wrapper/dists" >> gradle/wrapper/gradle-wrapper.properties
-
-          # تحميل وتركيب ملف الـ jar الخاص بـ Gradle Wrapper مباشرة لتجنب أي خطأ
-          curl -L -o gradle/wrapper/gradle-wrapper.jar https://raw.githubusercontent.com/gradle/gradle/v8.5.0/subprojects/wrapper/src/integTest/resources/org/gradle/wrapper/gradle-wrapper.jar || true
-
-          # إنشاء إعدادات تطبيق الـ Android
+          
           cat << 'EOF' > app/build.gradle
           plugins { id 'com.android.application' }
           android {
@@ -65,7 +50,6 @@ jobs:
           }
           EOF
 
-          # إنشاء ملف الواجهة
           cat << 'EOF' > app/src/main/res/layout/activity_main.xml
           <?xml version="1.0" encoding="utf-8"?>
           <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
@@ -83,10 +67,8 @@ jobs:
           </LinearLayout>
           EOF
 
-      - name: Build APK with Gradle
-        run: |
-          chmod +x gradlew || true
-          ./gradlew assembleDebug --stacktrace --info
+      - name: Build APK using Gradle Direct Command
+        run: gradle assembleDebug --stacktrace --info
 
       - name: Upload Debug APK
         uses: actions/upload-artifact@v4
