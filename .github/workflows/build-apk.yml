@@ -2,106 +2,31 @@ name: Build Al-Azzi Grocery APK
 
 on:
   push:
-    branches: [ "main", "master" ]
+    branches: [ main, master ]
   pull_request:
-    branches: [ "main", "master" ]
-  workflow_dispatch:
+    branches: [ main, master ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+    - uses: actions/checkout@v3
 
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
+    - name: Set up JDK 17
+      uses: actions/setup-java@v3
+      with:
+        distribution: 'temurin'
+        java-version: '17'
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+    - name: Grant execute permission for gradlew
+      run: chmod +x gradlew
 
-      - name: Setup Gradle & Project Structure
-        run: |
-          mkdir -p app/src/main/java/com/azzigrocery/app app/src/main/res/layout
-          
-          # ضبط ملف الجذر الصحيح لـ Gradle
-          cat << 'EOF' > build.gradle
-          buildscript {
-              repositories {
-                  google()
-                  mavenCentral()
-              }
-              dependencies {
-                  classpath 'com.android.tools.build:gradle:8.2.0'
-              }
-          }
-          allprojects {
-              repositories {
-                  google()
-                  mavenCentral()
-              }
-          }
-          task clean(type: Delete) {
-              delete rootProject.buildDir
-          }
-          EOF
+    - name: Build APK with Gradle
+      run: ./gradlew :app:assembleDebug
 
-          # ضبط إعدادات المستودع
-          echo "rootProject.name = 'Al-Azzi-Grocery-Hot'" > settings.gradle
-          echo "android.useAndroidX=true" > gradle.properties
-
-          # إعدادات تطبيق أندرويد
-          cat << 'EOF' > app/build.gradle
-          plugins {
-              id 'com.android.application'
-          }
-          android {
-              namespace 'com.azzigrocery.app'
-              compileSdk 34
-              defaultConfig {
-                  applicationId "com.azzigrocery.app"
-                  minSdk 24
-                  targetSdk 34
-                  versionCode 1
-                  versionName "1.0"
-              }
-          }
-          dependencies {
-              implementation 'androidx.core:core-ktx:1.12.0'
-              implementation 'androidx.appcompat:appcompat:1.6.1'
-              implementation 'com.google.android.material:material:1.11.0'
-          }
-          EOF
-
-          # واجهة المستخدم الأساسية
-          cat << 'EOF' > app/src/main/res/layout/activity_main.xml
-          <?xml version="1.0" encoding="utf-8"?>
-          <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-              android:layout_width="match_parent"
-              android:layout_height="match_parent"
-              android:orientation="vertical"
-              android:background="#0F172A"
-              android:padding="16dp"
-              android:layoutDirection="rtl">
-              <TextView
-                  android:layout_width="wrap_content"
-                  android:layout_height="wrap_content"
-                  android:text="بقالة العزي للمواد الغذائية"
-                  android:textColor="#FFFFFF"
-                  android:textSize="22sp"
-                  android:textStyle="bold"/>
-          </LinearLayout>
-          EOF
-
-      - name: Build APK with Gradle
-        run: gradle assembleDebug --stacktrace
-
-      - name: Upload Debug APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-debug-apk
-          path: app/build/outputs/apk/debug/*.apk
+    - name: Upload Debug APK
+      uses: actions/upload-artifact@v3
+      with:
+        name: app-debug
+        path: app/build/outputs/apk/debug/app-debug.apk
